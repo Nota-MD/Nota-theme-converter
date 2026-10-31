@@ -1,0 +1,19 @@
+{
+  "name": "@nota-md/theme-converter",
+  "version": "1.0.0",
+  "description": "Local GTK/GNOME and KDE Plasma theme converter for Nota",
+  "type": "module",
+  "license": "BSD-2-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nota-MD/Nota-theme-converter.git"
+  },
+  "homepage": "https://nota-md.github.io/Nota-theme-converter/",
+  "scripts": {
+    "test": "node tests/theme-converter.test.mjs",
+    "start": "python3 -m http.server 8000"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

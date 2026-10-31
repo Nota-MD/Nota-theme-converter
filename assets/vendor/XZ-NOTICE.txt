@@ -1,0 +1,7 @@
+xz-decompress 0.2.3
+https://github.com/httptoolkit/xz-decompress
+
+MIT License. Based on xzwasm by Steve Sanderson (MIT), xz-embedded by
+Lasse Collin and Igor Pavlov (public domain), and walloc by Igalia, S.L. (MIT).
+
+The bundled minified file retains the upstream copyright and license notice.

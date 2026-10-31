@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Choose the GTK/GNOME or KDE Plasma theme converter for Nota. Both run locally and preserve bundled fonts.">
+  <meta name="theme-color" content="#f6f5f4">
+  <title>Nota Theme Converter</title>
+  <link rel="icon" href="assets/nota-icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="converter-choice-page">
+  <header class="site-header">
+    <div class="bar">
+      <a class="brand" href="index.html" aria-label="Theme converter home">
+        <img class="brand-icon" src="assets/nota-icon.svg" alt="">
+        <img class="brand-wordmark" src="assets/nota-wordmark.svg" alt="Nota">
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="https://nota-md.github.io/" data-zh="Nota 官网">Nota ↗</a>
+        <a href="gtk.html" data-zh="GTK / GNOME">GTK / GNOME</a>
+        <a href="kde.html" data-zh="KDE Plasma">KDE Plasma</a>
+        <a href="?lang=zh" lang="zh-CN">中文</a>
+      </nav>
+      <a class="button small" href="#converters" data-zh="选择转换器">Choose converter</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="converter-choice-hero shell">
+      <img class="converter-choice-icon" src="assets/nota-icon.svg" alt="">
+      <p class="eyebrow" data-zh="主题转换器">Theme converter</p>
+      <h1 data-zh="从你熟悉的桌面开始。">Start from the desktop you already use.</h1>
+      <p class="lead" data-zh="选择主题来源。GTK/GNOME 与 KDE Plasma 各有独立的识别、预览与字体处理流程，混合主题包不会再被误判成另一种格式。">
+        Pick the source ecosystem. Each converter has its own recognition
+        pipeline, preview and font handling, so a mixed theme archive is never
+        guessed into the wrong format.
+      </p>
+    </section>
+
+    <section class="converter-choices shell wide" id="converters">
+      <a class="converter-choice gtk-choice" href="gtk.html">
+        <span class="choice-label">GNOME / GTK</span>
+        <span class="choice-visual" aria-hidden="true">
+          <i class="choice-window choice-window-a"></i>
+          <i class="choice-window choice-window-b"></i>
+          <i class="choice-accent"></i>
+        </span>
+        <strong data-zh="把 GNOME 带到 Nota">Bring GNOME with you</strong>
+        <span data-zh="GTK 3/4 配色、几何参数、@font-face 资源和 gtk-font-name。">GTK 3/4 palettes, geometry, @font-face assets and gtk-font-name.</span>
+        <em data-zh="打开 GTK 转换器 ↗">Open GTK converter ↗</em>
+      </a>
+      <a class="converter-choice kde-choice" href="kde.html">
+        <span class="choice-label">KDE PLASMA</span>
+        <span class="choice-visual" aria-hidden="true">
+          <i class="choice-window choice-window-a"></i>
+          <i class="choice-window choice-window-b"></i>
+          <i class="choice-accent"></i>
+        </span>
+        <strong data-zh="把 Plasma 配色带到 Nota">Turn Plasma into Nota</strong>
+        <span data-zh="窗口、视图、按钮与选择项配色，以及 KDE 字体设置。">Window, View, Button and Selection roles plus KDE font settings.</span>
+        <em data-zh="打开 KDE 转换器 ↗">Open KDE converter ↗</em>
+      </a>
+    </section>
+
+    <p class="converter-choice-note shell" data-zh="全部在本地处理。导出的主题包含 README、许可证、自带字体以及可直接用于 Nota 的相对资源路径。">
+      Everything runs locally. Exported themes include a README, license files,
+      bundled fonts and relative asset paths ready for Nota.
+    </p>
+  </main>
+
+  <footer class="shell wide">
+    <span>© 2026 Nota</span>
+    <span><a href="https://nota-md.github.io/" data-zh="Nota 官网">Nota ↗</a> · <a href="https://github.com/Nota-MD/Nota-theme-converter" data-zh="源码">Source</a></span>
+  </footer>
+  <script>
+    const language = new URLSearchParams(location.search).get("lang");
+    if (language === "zh") {
+      document.documentElement.lang = "zh-CN";
+      document.title = "主题转换器 — Nota";
+      for (const element of document.querySelectorAll("[data-zh]")) {
+        element.textContent = element.dataset.zh;
+      }
+      for (const link of document.querySelectorAll('a[href="gtk.html"], a[href="kde.html"]')) {
+        const target = new URL(link.href);
+        target.searchParams.set("lang", "zh");
+        link.href = target.toString();
+      }
+    }
+  </script>
+</body>
+</html>

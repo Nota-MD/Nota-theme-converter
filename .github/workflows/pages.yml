@@ -1,0 +1,50 @@
+name: Deploy theme converter
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test converter
+        run: |
+          node --check theme-converter-core.js
+          node --check theme-converter.js
+          node tests/theme-converter.test.mjs
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -a index.html gtk.html kde.html styles.css \
+            theme-converter.js theme-converter-core.js \
+            .nojekyll assets _site/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

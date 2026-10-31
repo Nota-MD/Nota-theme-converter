@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Convert installable KDE Plasma color schemes and global themes into Nota interface themes, including bundled fonts, entirely in your browser.">
+  <meta name="theme-color" content="#f7f8fa">
+  <title>KDE Plasma Theme Converter — Nota</title>
+  <link rel="icon" href="assets/nota-icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="assets/vendor/xz-decompress.min.js" defer></script>
+  <script type="module" src="theme-converter.js"></script>
+</head>
+<body class="converter-kde" data-converter-kind="kde">
+  <header class="site-header">
+    <p class="availability" data-i18n="privacyBanner">Theme packages are processed entirely on this device. Nothing is uploaded.</p>
+    <div class="bar">
+      <a class="brand" href="index.html" aria-label="Theme converter home">
+        <img class="brand-icon" src="assets/nota-icon.svg" alt="">
+        <img class="brand-wordmark" src="assets/nota-wordmark.svg" alt="Nota">
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="index.html" data-i18n="home">Converter home</a>
+        <a href="https://nota-md.github.io/#themes" data-i18n="themes">Themes ↗</a>
+        <a href="gtk.html" data-i18n="converterGtk">GTK / GNOME</a>
+        <a href="kde.html" aria-current="page" data-i18n="converterKde">KDE Plasma</a>
+        <a href="?lang=zh" lang="zh-CN" data-i18n="language">中文</a>
+      </nav>
+      <a class="button small" href="https://github.com/Nota-MD/Nota-theme-converter" target="_blank" rel="noreferrer">Source ↗</a>
+    </div>
+  </header>
+
+  <main class="converter-page">
+    <section class="converter-hero kde-hero shell wide">
+      <div class="kde-hero-copy">
+        <p class="eyebrow" data-i18n="eyebrow">KDE Plasma converter</p>
+        <h1 data-i18n="title">Your Plasma palette,<br>now in Nota.</h1>
+        <p class="lead" data-i18n="lead">
+          Load a Plasma color scheme or global theme. Nota reads its window,
+          view, button and selection roles, plus bundled fonts, and converts
+          them locally into a ready-to-import UI theme.
+        </p>
+        <div class="kde-facts">
+          <span>KDE Plasma</span>
+          <span>Global themes</span>
+          <span>Bundled fonts</span>
+        </div>
+      </div>
+      <div class="kde-art" aria-hidden="true">
+        <div class="kde-art-window">
+          <span class="kde-art-dot"></span>
+          <span class="kde-art-dot"></span>
+          <span class="kde-art-dot"></span>
+          <div class="kde-art-sidebar"></div>
+          <div class="kde-art-page">
+            <i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+        <div class="kde-art-panel">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="converter-workspace shell wide">
+      <article class="converter-card">
+        <div class="converter-card-inner">
+          <label class="drop-zone" id="drop-zone">
+            <input id="theme-file" type="file" accept=".zip,.tar,.tar.gz,.tgz,.tar.xz,.txz,.colors">
+            <span>
+              <span class="drop-icon" aria-hidden="true">↓</span>
+              <h2 data-i18n="dropTitle">Drop a Plasma theme package</h2>
+              <p data-i18n="dropBody">or click to choose a ZIP, TAR.GZ or TAR.XZ downloaded from KDE Store. Standalone .colors files are supported too.</p>
+            </span>
+          </label>
+
+          <div class="privacy-note">
+            <span aria-hidden="true">●</span>
+            <span data-i18n="privacyNote"><strong>Local only.</strong> The file stays in this browser tab. No account, server, analytics or upload is involved.</span>
+          </div>
+
+          <div class="converter-status" id="converter-status" role="status" aria-live="polite" data-i18n="idle">
+            Waiting for a recognized KDE Plasma theme package.
+          </div>
+
+          <section class="converter-result" id="converter-result">
+            <div class="result-head">
+              <div>
+                <h3 id="result-name">Theme</h3>
+                <p id="result-kind"></p>
+              </div>
+              <div class="mode-switch" aria-label="Preview mode">
+                <button type="button" data-mode="light" aria-pressed="true" data-i18n="light">Light</button>
+                <button type="button" data-mode="dark" aria-pressed="false" data-i18n="dark">Dark</button>
+              </div>
+            </div>
+            <div class="token-grid" id="token-grid"></div>
+            <div class="result-actions">
+              <button class="button primary" id="download-theme" type="button" data-i18n="download">Download Nota theme</button>
+              <button class="button" id="copy-css" type="button" data-i18n="copyCss">Copy CSS</button>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <aside>
+        <p class="preview-label" data-i18n="previewLabel">Live Nota preview</p>
+        <div class="nota-preview" id="nota-preview" aria-live="polite">
+          <div class="preview-chrome">
+            <i></i><i></i><i></i>
+            <strong>Notes — Nota</strong>
+          </div>
+          <div class="preview-body">
+            <aside class="preview-sidebar">
+              <strong>Notes</strong>
+              <span class="active">Reading notes</span>
+              <span>Release checklist</span>
+              <span>Weekend journal</span>
+            </aside>
+            <article class="preview-editor">
+              <div class="preview-toolbar"><i></i><i></i><i></i><i></i></div>
+              <h3 data-i18n="previewTitle">A quieter place to write</h3>
+              <p data-i18n="previewBody">The converted palette is applied to the same semantic tokens used by Nota’s desktop interface.</p>
+              <blockquote data-i18n="previewQuote">Formatting follows the writing, while the Markdown file remains yours.</blockquote>
+              <code>const theme = "imported locally";</code>
+            </article>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="supported-cards shell wide">
+      <article class="supported-card">
+        <h3>Color schemes</h3>
+        <p data-i18n="kdeCard">Reads Colors:Window, View, Button and Selection roles from standard Plasma color schemes.</p>
+        <code>[Colors:Window] BackgroundNormal=…</code>
+      </article>
+      <article class="supported-card">
+        <h3>Global themes</h3>
+        <p data-i18n="kdeGlobalCard">Finds metadata, config and color files inside Plasma global-theme packages while ignoring splash and wallpaper payloads.</p>
+        <code>metadata.json + contents/colors</code>
+      </article>
+      <article class="supported-card">
+        <h3>Typography</h3>
+        <p data-i18n="kdeFontCard">Reads KDE font settings and @font-face declarations. Bundled WOFF2, WOFF, TTF and OTF fonts are exported with the theme.</p>
+        <code>kdeglobals + contents/fonts/</code>
+      </article>
+    </section>
+
+    <p class="example-links shell wide">
+      <strong data-i18n="testedWith">Compatible sources:</strong>
+      <a href="https://store.kde.org/" target="_blank" rel="noreferrer">KDE Store ↗</a>
+      <a href="https://github.com/dracula/kde" target="_blank" rel="noreferrer">Dracula KDE ↗</a>
+      <a href="https://www.pling.com/p/2380631/" target="_blank" rel="noreferrer">Papaya Slate ↗</a>
+    </p>
+  </main>
+
+  <footer class="shell wide">
+    <span>© 2026 Nota</span>
+    <span><a href="gtk.html" data-i18n="converterGtk">GTK / GNOME</a> · <a href="index.html" data-i18n="home">Converter home</a></span>
+  </footer>
+
+  <script id="converted-preview-style"></script>
+</body>
+</html>
