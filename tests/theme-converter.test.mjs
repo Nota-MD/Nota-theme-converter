@@ -3,6 +3,7 @@ import {
   makeZip,
   recognizeAndConvert,
 } from "../theme-converter-core.js";
+import { readFileSync } from "node:fs";
 
 let passed = 0;
 const failures = [];
@@ -202,6 +203,20 @@ test("generated Nota package is a readable ZIP", () => {
 test("generic ZIP writer retains UTF-8 names", () => {
   const zip = makeZip({ "中文/theme.css": "body {}" });
   assert(new TextDecoder().decode(zip).includes("中文/theme.css"), "UTF-8 filename missing");
+});
+
+test("converter pages inject generated CSS through a style element", () => {
+  for (const page of ["gtk.html", "kde.html"]) {
+    const html = readFileSync(new URL(`../${page}`, import.meta.url), "utf8");
+    assert(
+      html.includes('<style id="converted-preview-style"></style>'),
+      `${page} does not provide a style element for converted CSS`,
+    );
+    assert(
+      !html.includes('<script id="converted-preview-style"></script>'),
+      `${page} still uses a script element for converted CSS`,
+    );
+  }
 });
 
 console.log(`\n通过 ${passed} 条，失败 ${failures.length} 条`);
