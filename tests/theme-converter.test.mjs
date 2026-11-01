@@ -219,5 +219,12 @@ test("converter pages inject generated CSS through a style element", () => {
   }
 });
 
+test("converter entry exposes a round-trip language switch", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert(html.includes('id="language-toggle"'), "language toggle id is missing");
+  assert(html.includes('languageLink.href = "?lang=en"'), "Chinese mode cannot switch back to English");
+  assert(html.includes('languageLink.href = "?lang=zh"'), "English mode cannot switch to Chinese");
+});
+
 console.log(`\n通过 ${passed} 条，失败 ${failures.length} 条`);
 if (failures.length) process.exitCode = 1;

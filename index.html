@@ -20,7 +20,7 @@
         <a href="https://nota-md.github.io/" data-zh="Nota 官网">Nota ↗</a>
         <a href="gtk.html" data-zh="GTK / GNOME">GTK / GNOME</a>
         <a href="kde.html" data-zh="KDE Plasma">KDE Plasma</a>
-        <a href="?lang=zh" lang="zh-CN">中文</a>
+        <a id="language-toggle" href="?lang=zh" lang="zh-CN">中文</a>
       </nav>
       <a class="button small" href="#converters" data-zh="选择转换器">Choose converter</a>
     </div>
@@ -75,6 +75,7 @@
   </footer>
   <script>
     const language = new URLSearchParams(location.search).get("lang");
+    const languageLink = document.querySelector("#language-toggle");
     if (language === "zh") {
       document.documentElement.lang = "zh-CN";
       document.title = "主题转换器 — Nota";
@@ -86,6 +87,13 @@
         target.searchParams.set("lang", "zh");
         link.href = target.toString();
       }
+      languageLink.textContent = "English";
+      languageLink.lang = "en";
+      languageLink.href = "?lang=en";
+    } else {
+      languageLink.textContent = "中文";
+      languageLink.lang = "zh-CN";
+      languageLink.href = "?lang=zh";
     }
   </script>
 </body>

@@ -120,6 +120,7 @@ if (languageLink) {
   const target = new URL(location.href);
   target.searchParams.set("lang", zh ? "en" : "zh");
   languageLink.href = target.toString();
+  languageLink.lang = zh ? "en" : "zh-CN";
 }
 
 const input = document.querySelector("#theme-file");
