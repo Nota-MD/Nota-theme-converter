@@ -33,7 +33,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp -a index.html gtk.html kde.html styles.css \
+          cp -a index.html gtk.html kde.html typora.html styles.css \
             theme-converter.js theme-converter-core.js \
             .nojekyll assets _site/
 
