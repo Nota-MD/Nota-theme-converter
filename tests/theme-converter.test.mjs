@@ -124,7 +124,7 @@ test("GTK and KDE produce matching document themes", () => {
   assert(kde.theme.document.css.includes("--doc-bg: #2c3746"), "KDE document paper mismatch");
 });
 
-test("document output packages install under themes/document", () => {
+test("document output packages use the stable document layout", () => {
   const entries = [
     {
       path: "Sample/gtk-4.0/gtk.css",
@@ -137,8 +137,8 @@ test("document output packages install under themes/document", () => {
   const zipText = new TextDecoder().decode(
     buildPackageZip({ entries, ...converted, output: "document" }),
   );
-  assert(zipText.includes("themes/document/gtk-document-zip/theme.css"), "document theme.css path is missing");
-  assert(zipText.includes("themes/document/dark/gtk-document-zip.css"), "dark companion is missing");
+  assert(zipText.includes("document/gtk-document-zip/theme.css"), "document theme.css path is missing");
+  assert(zipText.includes("document/dark/gtk-document-zip.css"), "dark companion is missing");
   assert(!zipText.includes("themes/ui/gtk-document-zip/"), "document package unexpectedly contains a UI theme");
 });
 

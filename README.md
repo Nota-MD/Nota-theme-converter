@@ -37,6 +37,14 @@ themes/ui/<id>/
 │   └── 01-ThemeSans-Regular.ttf
 ├── THEME-LICENSES/
 └── README.md
+
+document/<id>/
+├── theme.css
+├── fonts/
+├── THEME-LICENSES/
+└── README.md
+
+document/dark/<id>.css     # Imported as <id>-dark
 ```
 
 Generated CSS uses relative `url("./fonts/...")` paths. The live browser preview

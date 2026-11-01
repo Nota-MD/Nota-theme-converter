@@ -1686,6 +1686,7 @@ function packageReadme(recognized, theme, output) {
     ? theme.fonts.map((font) => `- ${font.family} (${font.outputPath})`).join("\n")
     : "- No bundled font files were found; the generated font stack relies on installed system fonts.";
   const target = output === "document" ? "document" : "ui";
+  const installPath = target === "ui" ? `themes/ui/${theme.id}` : `document/${theme.id}`;
   const source =
     recognized.kind === "gtk"
       ? "GTK / GNOME theme package"
@@ -1710,7 +1711,7 @@ ${fontNames}
 Extract this archive into your Nota configuration directory:
 
 \`\`\`text
-themes/${target}/${theme.id}/theme.css
+${installPath}/theme.css
 \`\`\`
 
 On Linux this is usually:
@@ -1741,14 +1742,14 @@ export function buildPackageZip({ entries, recognized, theme, output = "ui" }) {
 
   const files = {};
   const addPackage = (target) => {
-    const root = `themes/${target}/${theme.id}`;
+    const root = target === "document" ? `document/${theme.id}` : `themes/ui/${theme.id}`;
     files[`${root}/README.md`] = packageReadme(recognized, theme, target);
     if (target === "ui") {
       files[`${root}/theme.css`] = theme.css;
     } else {
       files[`${root}/theme.css`] = theme.document.css;
       if (theme.document.darkCss) {
-        files[`themes/document/dark/${theme.id}.css`] = theme.document.darkCss;
+        files[`document/dark/${theme.id}.css`] = theme.document.darkCss;
       }
     }
     for (const font of theme.fonts ?? []) {
