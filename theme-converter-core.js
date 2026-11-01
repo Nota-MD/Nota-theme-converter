@@ -54,10 +54,11 @@ async function unxz(bytes) {
 }
 
 function normalizePath(path) {
-  return path
+  return String(path)
     .replace(/\\/g, "/")
-    .replace(/^\.?\//, "")
-    .replace(/\/{2,}/g, "/");
+    .split("/")
+    .filter((part) => part && part !== ".")
+    .join("/");
 }
 
 async function unzip(bytes) {
@@ -171,6 +172,9 @@ function untar(bytes) {
 export async function extractThemePackage(file) {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const lower = file.name.toLowerCase();
+  if (lower.endsWith(".css")) {
+    return [{ path: basename(file.name), data: bytes }];
+  }
   if (
     (bytes[0] === 0x50 && bytes[1] === 0x4b) ||
     lower.endsWith(".zip")
@@ -194,7 +198,7 @@ export async function extractThemePackage(file) {
   if (lower.endsWith(".tar") || (bytes.length > 265 && decodeText(bytes.subarray(257, 262)) === "ustar")) {
     return untar(bytes);
   }
-  throw new Error("Unsupported package. Use a GTK theme ZIP, TAR.GZ/TGZ, TAR.XZ, or a KDE color scheme.");
+  throw new Error("Unsupported package. Use a Typora CSS/ZIP, GTK theme archive, or KDE color scheme.");
 }
 
 function parseIni(source) {
@@ -403,21 +407,100 @@ function detectKdeTheme(entries) {
   };
 }
 
+function typoraVariantBase(path) {
+  return basename(path)
+    .replace(/\.css$/i, "")
+    .replace(/(?:^|[-_.])(?:light|dark|darker|night)(?=$|[-_.])/gi, "")
+    .replace(/[-_.]{2,}/g, "-")
+    .replace(/^[-_.]+|[-_.]+$/g, "")
+    .toLowerCase();
+}
+
+function typoraCandidates(entries) {
+  const eligible = entries.filter((entry) => {
+    if (!/\.css$/i.test(entry.path) || /\.user\.css$/i.test(entry.path)) return false;
+    if (entry.data.length > 8 * 1024 * 1024) return false;
+    const css = cssBundle(entries, entry.path).replace(/\/\*[\s\S]*?\*\//g, "");
+    return css.includes("#write") || css.includes("--bg-color");
+  });
+  const minimumDepth = Math.min(
+    ...eligible.map((entry) => normalizePath(entry.path).split("/").length),
+  );
+  return eligible
+    .filter((entry) => normalizePath(entry.path).split("/").length === minimumDepth)
+    .map((entry) => {
+      const css = cssBundle(entries, entry.path).replace(/\/\*[\s\S]*?\*\//g, "");
+      const stem = basename(entry.path).replace(/\.css$/i, "");
+      let score = 0;
+      if (css.includes("--bg-color")) score += 50;
+      if (css.includes("#write")) score += 35;
+      if (css.includes("--text-color")) score += 12;
+      if (css.includes("#typora-sidebar")) score += 8;
+      if (/(^|\/)(?:theme|base)\.css$/i.test(entry.path)) score += 20;
+      if (!/(?:^|[-_.])(?:light|dark|darker|night)(?:$|[-_.])/i.test(stem)) score += 8;
+      score -= Math.min(stem.length, 40) / 10;
+      return { entry, css, score };
+    })
+    .sort((left, right) => right.score - left.score || left.entry.path.localeCompare(right.entry.path));
+}
+
+function detectTyporaTheme(entries) {
+  const candidates = typoraCandidates(entries);
+  if (!candidates.length) return null;
+
+  const selectedPath = candidates[0].entry.path;
+  const variantBase = typoraVariantBase(selectedPath);
+  const sameVariant = candidates.filter(
+    (candidate) => typoraVariantBase(candidate.entry.path) === variantBase,
+  );
+  const isDarkName = (path) => /(?:^|[-_.])(?:dark|darker|night)(?:$|[-_.])/i.test(basename(path));
+  const light =
+    sameVariant.find((candidate) => !isDarkName(candidate.entry.path)) ?? candidates[0];
+  const dark = sameVariant.find((candidate) => isDarkName(candidate.entry.path));
+  const lightCss = cssBundle(entries, light.entry.path);
+  const darkCss = dark ? cssBundle(entries, dark.entry.path) : "";
+  const variables = parseCssVariables(lightCss);
+  const typoraFont = safeUiFontStack(
+    resolveCssVariable("--font-ui", variables) ||
+      resolveCssVariable("--font-sans-serif", variables) ||
+      resolveCssVariable("--font-family", variables) ||
+      resolveCssVariable("--font-text", variables),
+  );
+  const typoraMonoFont =
+    resolveCssVariable("--font-monospace", variables) ||
+    resolveCssVariable("--code-font-family", variables) ||
+    resolveCssVariable("--monospace", variables);
+
+  return {
+    kind: "typora",
+    pipeline: "typora",
+    root: dirname(light.entry.path),
+    name: basename(light.entry.path).replace(/\.css$/i, "") || "Typora theme",
+    comment: "Typora theme",
+    lightCss,
+    darkCss,
+    typoraFont,
+    typoraMonoFont,
+    variants: candidates.length,
+  };
+}
+
 export function recognizeThemePackage(entries, options = {}) {
   const gtk = detectGtkTheme(entries);
   const kde = detectKdeTheme(entries);
-  const availableKinds = [gtk?.kind, kde?.kind].filter(Boolean);
+  const typora = detectTyporaTheme(entries);
+  const availableKinds = [gtk?.kind, kde?.kind, typora?.kind].filter(Boolean);
   const preferredKind = String(options.preferredKind ?? "auto").toLowerCase();
 
   if (!availableKinds.length) {
     throw new Error(
-      "No installable GTK or KDE theme structure was found. Look for index.theme + gtk-3.0/gtk.css, or a KDE colors file.",
+      "No supported theme structure was found. Use a Typora CSS theme, a GTK package with gtk-3.0/gtk.css, or a KDE color scheme.",
     );
   }
 
   let recognized;
-  if (preferredKind === "gtk" || preferredKind === "kde") {
-    recognized = preferredKind === "gtk" ? gtk : kde;
+  if (["gtk", "kde", "typora"].includes(preferredKind)) {
+    recognized = { gtk, kde, typora }[preferredKind];
     if (!recognized) {
       throw new Error(
         `No ${preferredKind.toUpperCase()} theme was found. Available source: ${availableKinds.join(", ").toUpperCase()}.`,
@@ -427,8 +510,10 @@ export function recognizeThemePackage(entries, options = {}) {
     throw new Error(`Unknown conversion pipeline: ${preferredKind}.`);
   } else if (gtk && kde) {
     recognized = kde.isGlobalTheme ? kde : gtk;
+  } else if (typora && !gtk && !kde) {
+    recognized = typora;
   } else {
-    recognized = gtk ?? kde;
+    recognized = gtk ?? kde ?? typora;
   }
 
   return { ...recognized, availableKinds };
@@ -455,6 +540,10 @@ export function parseColor(value) {
   if (rgb) {
     return rgbToHex(Number(rgb[1]), Number(rgb[2]), Number(rgb[3]));
   }
+  const hsl = /^hsla?\(\s*([\d.]+)(?:deg)?[,\s]+([\d.]+)%[,\s]+([\d.]+)%/i.exec(source);
+  if (hsl) {
+    return hslToHex(Number(hsl[1]), Number(hsl[2]) / 100, Number(hsl[3]) / 100);
+  }
   const tuple = /^(\d+)\s*,\s*(\d+)\s*,\s*(\d+)$/.exec(source);
   if (tuple) return rgbToHex(Number(tuple[1]), Number(tuple[2]), Number(tuple[3]));
   return null;
@@ -463,6 +552,80 @@ export function parseColor(value) {
 export function rgbToHex(r, g, b) {
   const v = (number) => Math.max(0, Math.min(255, Math.round(number))).toString(16).padStart(2, "0");
   return `#${v(r)}${v(g)}${v(b)}`;
+}
+
+function hslToHex(hue, saturation, lightness) {
+  const h = ((hue % 360) + 360) % 360;
+  const s = Math.max(0, Math.min(1, saturation));
+  const l = Math.max(0, Math.min(1, lightness));
+  const chroma = (1 - Math.abs(2 * l - 1)) * s;
+  const section = h / 60;
+  const x = chroma * (1 - Math.abs((section % 2) - 1));
+  const [r, g, b] =
+    section < 1 ? [chroma, x, 0] :
+    section < 2 ? [x, chroma, 0] :
+    section < 3 ? [0, chroma, x] :
+    section < 4 ? [0, x, chroma] :
+    section < 5 ? [x, 0, chroma] :
+    [chroma, 0, x];
+  const match = l - chroma / 2;
+  return rgbToHex((r + match) * 255, (g + match) * 255, (b + match) * 255);
+}
+
+function parseCssVariables(css) {
+  const values = {};
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const match of clean.matchAll(/(--[\w-]+)\s*:\s*([^;{}]+)/g)) {
+    values[match[1]] = match[2].trim();
+  }
+  return values;
+}
+
+function resolveCssVariable(name, values, seen = new Set()) {
+  if (seen.has(name)) return "";
+  const source = values[name];
+  if (!source) return "";
+  seen.add(name);
+  const resolved = source.replace(
+    /var\(\s*(--[\w-]+)\s*(?:,\s*([^)]+))?\)/g,
+    (_all, nested, fallback) =>
+      resolveCssVariable(nested, values, new Set(seen)) || String(fallback || "").trim(),
+  );
+  seen.delete(name);
+  return resolved.trim();
+}
+
+function firstCssVariableColor(names, values) {
+  for (const name of names) {
+    const value = resolveCssVariable(name, values);
+    if (!value) continue;
+    const direct = parseColor(value);
+    if (direct) return direct;
+    for (const token of value.match(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/gi) ?? []) {
+      const color = parseColor(token);
+      if (color) return color;
+    }
+  }
+  return null;
+}
+
+function firstDistinctCssVariableColor(names, values, background) {
+  let fallback = null;
+  for (const name of names) {
+    const color = firstCssVariableColor([name], values);
+    if (!color) continue;
+    fallback ??= color;
+    if (Math.abs(luminance(color) - luminance(background)) >= 0.035) return color;
+  }
+  return fallback;
+}
+
+function firstCssVariable(names, values) {
+  for (const name of names) {
+    const value = resolveCssVariable(name, values);
+    if (value) return value;
+  }
+  return "";
 }
 
 function rgb(color) {
@@ -609,6 +772,29 @@ function configuredFontFamily(font) {
     .replace(/^["']|["']$/g, "");
 }
 
+function fontFamilyNames(font) {
+  const raw = String(font || "")
+    .replace(/^font-family\s*:/i, "")
+    .replace(/\s+\d+(?:\.\d+)?\s*$/, "");
+  return raw
+    .split(",")
+    .map((part) => part.trim().replace(/^["']|["']$/g, ""))
+    .filter((name) => name && !/^(?:normal|regular|bold|sans-serif|serif|monospace|system-ui)$/i.test(name));
+}
+
+function safeUiFontStack(font) {
+  const first = configuredFontFamily(font).toLowerCase();
+  if (!first) return "";
+  if (
+    /\b(?:serif|song|songti|ming|mincho|kai|times|georgia|palatino|garamond|roman|computer modern|cmu|lora|merriweather)\b/i.test(
+      first,
+    )
+  ) {
+    return "";
+  }
+  return font;
+}
+
 function normalizeFont(font) {
   const family = configuredFontFamily(font);
   const raw = family || String(font || "").replace(/\s+\d+(?:\.\d+)?\s*$/, "").trim();
@@ -627,8 +813,8 @@ const FONT_FORMATS = {
   woff: { mime: "font/woff", format: "woff" },
   woff2: { mime: "font/woff2", format: "woff2" },
 };
-const MAX_FONT_BYTES = 8 * 1024 * 1024;
-const MAX_FONT_TOTAL_BYTES = 24 * 1024 * 1024;
+const MAX_FONT_BYTES = 32 * 1024 * 1024;
+const MAX_FONT_TOTAL_BYTES = 48 * 1024 * 1024;
 const MAX_FONTS = 16;
 
 function extension(path) {
@@ -794,7 +980,15 @@ function cssComment(value) {
 
 function collectFonts(entries, recognized) {
   const hints = cssFontFaces(entries);
-  const configured = configuredFontFamily(recognized.kind === "gtk" ? recognized.gtkFont : recognized.kdeFont);
+  const fontSetting =
+    recognized.kind === "gtk"
+      ? recognized.gtkFont
+      : recognized.kind === "kde"
+        ? recognized.kdeFont
+        : recognized.typoraFont;
+  const configured = configuredFontFamily(fontSetting);
+  const configuredFamilies = fontFamilyNames(fontSetting);
+  const configuredMonoFamilies = fontFamilyNames(recognized.typoraMonoFont);
   const selected = [];
   let total = 0;
   let configuredFamilyUsed = false;
@@ -806,6 +1000,11 @@ function collectFonts(entries, recognized) {
     const hint = hints.get(entry.path);
     const detectedFamily = sfntFamily(entry.data) || familyFromFilename(entry.path);
     const looksMono = /mono|code|console/i.test(detectedFamily) || /mono|code|console/i.test(entry.path);
+    if (recognized.kind === "typora") {
+      const candidate = String(hint?.family || detectedFamily).toLowerCase();
+      const allowed = looksMono ? configuredMonoFamilies : configuredFamilies;
+      if (!allowed.some((family) => candidate.includes(family.toLowerCase()))) continue;
+    }
     let family = hint?.family || detectedFamily;
     if (!hint?.family && configured && !configuredFamilyUsed && !looksMono) {
       family = configured;
@@ -938,6 +1137,106 @@ function parseKdePalette(source, font = "") {
   };
 }
 
+function parseTyporaPalette(css, font = "") {
+  const variables = parseCssVariables(css);
+  const rules = cssRules(css);
+  const bg =
+    firstCssVariableColor(
+      [
+        "--bg-color",
+        "--background-color",
+        "--window-bg-color",
+        "--interface-default-bg-color",
+        "--writeArea-bg-color",
+      ],
+      variables,
+    ) ||
+    colorFromRules(rules, /(^|,\s*)(?:body|html|#write)(?:\s|$|,|:|\.)/i, "#f6f5f4");
+  const fg =
+    firstCssVariableColor(
+      [
+        "--text-color",
+        "--body-text-color",
+        "--writeArea-text-color",
+        "--write-area-text-color",
+      ],
+      variables,
+    ) ||
+    foregroundFromRules(
+      rules,
+      /(^|,\s*)(?:body|html|#write)(?:\s|$|,|:|\.)/i,
+      contrastText(bg),
+    );
+  const view =
+    firstCssVariableColor(["--side-bar-bg-color", "--sidebar-bg-color"], variables) || bg;
+  const subtle =
+    firstCssVariableColor(
+      ["--code-block-bg-color", "--code-bg-color", "--blockquote-bg-color"],
+      variables,
+    ) || mixColors(bg, fg, 0.055);
+  const hover =
+    firstCssVariableColor(
+      ["--item-hover-bg-color", "--btn-hover-bg-color", "--control-hover-bg-color"],
+      variables,
+    ) || mixColors(bg, fg, 0.07);
+  const active =
+    firstCssVariableColor(["--active-file-bg-color", "--control-active-bg-color"], variables) ||
+    mixColors(bg, fg, 0.12);
+  const accent =
+    firstDistinctCssVariableColor(
+      [
+        "--theme-color-01",
+        "--tw-primary",
+        "--todo-bg-color",
+        "--search-select-text-color",
+        "--link-color",
+        "--a-color",
+        "--active-text-color",
+        "--primary-color",
+        "--primary-btn-border-color",
+        "--active-file-border-color",
+        "--focus-ring-color",
+        "--menu-footer-OK-btn-bg-color",
+        "--select-text-bg-color",
+        "--writeArea-selected-text-bg-color",
+      ],
+      variables,
+      bg,
+    ) ||
+    foregroundFromRules(
+      rules,
+      /(^|,\s*)a(?:\s|$|,|:|\.)/i,
+      colorFromRules(rules, /selection|:selected|\.selected/i, "#3584e4"),
+    );
+  const accentFg =
+    firstCssVariableColor(
+      ["--active-file-text-color", "--select-text-font-color", "--primary-btn-text-color"],
+      variables,
+    ) || contrastText(accent);
+  const border = firstCssVariableColor(
+    ["--window-border", "--control-border-color", "--border-color", "--table-border-color"],
+    variables,
+  );
+
+  return {
+    mode: modeOf(bg),
+    font: normalizeFont(font),
+    geometry: geometryFromCss(css),
+    palette: completePalette({
+      bg,
+      fg,
+      view,
+      subtle,
+      raised: view,
+      hover,
+      active,
+      accent,
+      accentFg,
+      border,
+    }),
+  };
+}
+
 function samePalette(left, right) {
   return ["bg", "fg", "accent", "raised", "border"].every((key) => left.palette[key] === right.palette[key]);
 }
@@ -963,12 +1262,34 @@ function declarationLines(palette) {
 
 function renderThemeCss(id, recognized, light, dark, fonts) {
   const uiFonts = fonts.filter((font) => !/mono|code|console/i.test(`${font.family} ${font.sourcePath}`));
-  const configured = configuredFontFamily(recognized.kind === "gtk" ? recognized.gtkFont : recognized.kdeFont);
+  const fontSetting =
+    recognized.kind === "gtk"
+      ? recognized.gtkFont
+      : recognized.kind === "kde"
+        ? recognized.kdeFont
+        : recognized.typoraFont;
+  const configured = configuredFontFamily(fontSetting);
   const preferred = configured || uiFonts[0]?.family || fonts[0]?.family;
-  const mono = fonts.find((font) => /mono|code|console/i.test(`${font.family} ${font.sourcePath}`))?.family;
-  const uiFont = fonts.length ? fontStack(uiFonts.length ? uiFonts : fonts, preferred) : normalizeFont(configured);
+  const configuredMono =
+    recognized.kind === "typora" ? configuredFontFamily(recognized.typoraMonoFont) : "";
+  const mono =
+    fonts.find((font) => /mono|code|console/i.test(`${font.family} ${font.sourcePath}`))?.family ||
+    configuredMono;
+  const fallbackUiFonts = recognized.kind === "typora" ? [] : fonts;
+  const uiFont = uiFonts.length
+    ? fontStack(uiFonts, preferred)
+    : configured
+      ? normalizeFont(configured)
+      : fallbackUiFonts.length
+        ? fontStack(fallbackUiFonts, preferred)
+        : normalizeFont("");
   const monoFont = mono ? `${cssString(mono)}, ui-monospace, monospace` : "ui-monospace, monospace";
-  const sourceLabel = recognized.kind === "gtk" ? "GTK / GNOME theme package" : "KDE Plasma theme package";
+  const sourceLabel =
+    recognized.kind === "gtk"
+      ? "GTK / GNOME theme package"
+      : recognized.kind === "kde"
+        ? "KDE Plasma theme package"
+        : "Typora theme";
   const fontCss = fonts.map((font) => font.faces).join("\n\n");
   const css = `/* Generated by Nota Theme Converter from ${cssComment(recognized.name)}. */
 /* Source pipeline: ${sourceLabel}. */
@@ -1038,9 +1359,34 @@ function convertKdeTheme(id, recognized, entries) {
   };
 }
 
+function convertTyporaTheme(id, recognized, entries) {
+  let light = parseTyporaPalette(recognized.lightCss, recognized.typoraFont);
+  let dark = recognized.darkCss
+    ? parseTyporaPalette(recognized.darkCss, recognized.typoraFont)
+    : light;
+  if (light.mode === "dark" && dark.mode === "light") [light, dark] = [dark, light];
+  if (light.mode === "dark") dark = light;
+  if (samePalette(light, dark)) dark = light;
+  const fonts = collectFonts(entries, recognized);
+  const rendered = renderThemeCss(id, recognized, light, dark, fonts);
+  return {
+    id,
+    ...rendered,
+    light,
+    dark,
+    mode: light.mode,
+    name: recognized.name,
+    kind: "typora",
+    pipeline: "typora",
+    fonts,
+    sourceKinds: recognized.availableKinds,
+  };
+}
+
 export function buildNotaTheme(id, recognized, entries = []) {
   if (recognized.kind === "gtk") return convertGtkTheme(id, recognized, entries);
   if (recognized.kind === "kde") return convertKdeTheme(id, recognized, entries);
+  if (recognized.kind === "typora") return convertTyporaTheme(id, recognized, entries);
   throw new Error(`Unsupported conversion pipeline: ${recognized.kind}`);
 }
 
@@ -1164,8 +1510,20 @@ export function buildPackageZip({ entries, recognized, theme }) {
 
 Generated by Nota Theme Converter.
 
-Source format: ${recognized.kind === "gtk" ? "GTK / GNOME theme package" : "KDE Plasma theme package"}
-Conversion pipeline: ${recognized.kind === "gtk" ? "GTK → Nota UI" : "KDE Plasma → Nota UI"}
+Source format: ${
+    recognized.kind === "gtk"
+      ? "GTK / GNOME theme package"
+      : recognized.kind === "kde"
+        ? "KDE Plasma theme package"
+        : "Typora theme"
+  }
+Conversion pipeline: ${
+    recognized.kind === "gtk"
+      ? "GTK → Nota UI"
+      : recognized.kind === "kde"
+        ? "KDE Plasma → Nota UI"
+        : "Typora → Nota UI"
+  }
 Mapped theme ID: ${theme.id}
 
 ## Bundled fonts

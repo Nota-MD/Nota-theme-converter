@@ -1,5 +1,6 @@
 import {
   buildPackageZip,
+  extractThemePackage,
   makeZip,
   recognizeAndConvert,
 } from "../theme-converter-core.js";
@@ -175,6 +176,130 @@ test("ambiguous packages can be converted through either pipeline", () => {
   assert(kde.theme.sourceKinds.includes("gtk"), "available source kinds were not reported");
 });
 
+test("Typora theme maps UI variables without copying document selectors", () => {
+  const font = bytes("TYpora-CUSTOM-FONT");
+  const entries = [
+    {
+      path: "Typora/paper.css",
+      data: bytes(`
+        @font-face {
+          font-family: "Paper Sans";
+          src: url("fonts/PaperSans.ttf") format("truetype");
+        }
+        :root {
+          --bg-color: #faf7f0;
+          --text-color: #312a22;
+          --side-bar-bg-color: #f0ebe1;
+          --item-hover-bg-color: #e8dfd0;
+          --active-file-bg-color: #dfd2bd;
+          --search-select-text-color: var(--bg-color);
+          --primary-color: #a23b2a;
+          --window-border: 1px solid #c9bca8;
+          --font-family: "Paper Serif", serif;
+          --font-sans-serif: "Paper Sans", sans-serif;
+        }
+        body { background: var(--bg-color); color: var(--text-color); }
+        #write { padding: 2rem; }
+        button { border-radius: 7px; min-height: 32px; }
+      `),
+    },
+    { path: "Typora/fonts/PaperSans.ttf", data: font },
+  ];
+  const converted = recognizeAndConvert(entries, { preferredKind: "typora" });
+  assert(converted.theme.pipeline === "typora", "Typora pipeline was not selected");
+  assert(converted.theme.light.palette.bg === "#faf7f0", "Typora background mismatch");
+  assert(converted.theme.light.palette.raised === "#f0ebe1", "Typora sidebar mismatch");
+  assert(converted.theme.light.palette.accent === "#a23b2a", "Typora accent mismatch");
+  assert(converted.theme.light.geometry.radius === 7, "Typora radius mismatch");
+  assert(converted.theme.fonts.length === 1, "Typora bundled font was not collected");
+  assert(converted.theme.css.includes('--font-ui: "Paper Sans"'), "Typora UI font was not mapped");
+  assert(!converted.theme.css.includes("#write"), "document selectors leaked into UI CSS");
+  const zipText = new TextDecoder().decode(buildPackageZip({ entries, ...converted }));
+  assert(zipText.includes("Typora → Nota UI"), "Typora package README is missing the source pipeline");
+});
+
+test("Typora document serif fonts do not leak into the Nota UI font", () => {
+  const entries = [
+    {
+      path: "Paper/paper.css",
+      data: bytes(`
+        @font-face {
+          font-family: "Paper Serif";
+          src: url("fonts/PaperSerif.ttf") format("truetype");
+        }
+        :root {
+          --bg-color: #ffffff;
+          --text-color: #222222;
+          --font-family: "Paper Serif", serif;
+        }
+        #write { font-family: var(--font-family); }
+      `),
+    },
+    { path: "Paper/fonts/PaperSerif.ttf", data: bytes("SERIF") },
+  ];
+  const converted = recognizeAndConvert(entries, { preferredKind: "typora" });
+  assert(!converted.theme.uiFont.includes("Paper Serif"), "serif document font leaked into --font-ui");
+  assert(converted.theme.fonts.length === 0, "unused document font was exported into the UI package");
+});
+
+test("Typora light and dark companions stay paired", () => {
+  const entries = [
+    {
+      path: "Paper/paper.css",
+      data: bytes(`
+        :root {
+          --bg-color: #fffaf2;
+          --text-color: #241f1a;
+          --primary-color: #b24a36;
+        }
+        #write { color: var(--text-color); }
+      `),
+    },
+    {
+      path: "Paper/paper-dark.css",
+      data: bytes(`
+        :root {
+          --bg-color: #191714;
+          --text-color: #eee7dc;
+          --primary-color: #e88b72;
+        }
+        #write { color: var(--text-color); }
+      `),
+    },
+  ];
+  const converted = recognizeAndConvert(entries, { preferredKind: "typora" });
+  assert(converted.theme.light.palette.bg === "#fffaf2", "light companion was not selected");
+  assert(converted.theme.dark.palette.bg === "#191714", "dark companion was not paired");
+});
+
+test("a standalone Typora CSS file is accepted", async () => {
+  const source = ":root { --bg-color: #ffffff; --text-color: #111111; } #write { color: var(--text-color); }";
+  const entries = await extractThemePackage({
+    name: "paper.css",
+    async arrayBuffer() {
+      return bytes(source).buffer;
+    },
+  });
+  assert(entries.length === 1 && entries[0].path === "paper.css", "CSS file was not exposed as one entry");
+  const converted = recognizeAndConvert(entries, { preferredKind: "typora" });
+  assert(converted.theme.light.palette.bg === "#ffffff", "standalone Typora CSS was not converted");
+});
+
+test("wrapped Typora ZIPs resolve dot-relative imports", async () => {
+  const entries = await extractThemePackage({
+    name: "paper.zip",
+    async arrayBuffer() {
+      const zip = makeZip({
+        "Wrapper/paper.css": '@import "./parts/colors.css";\n#write { color: var(--text-color); }',
+        "Wrapper/parts/colors.css": ":root { --bg-color: #fffaf2; --text-color: #241f1a; }",
+      });
+      return zip.buffer.slice(zip.byteOffset, zip.byteOffset + zip.byteLength);
+    },
+  });
+  const converted = recognizeAndConvert(entries, { preferredKind: "typora" });
+  assert(converted.theme.light.palette.bg === "#fffaf2", "wrapped import colors were not loaded");
+});
+
 test("unrecognized archives are rejected", () => {
   let message = "";
   try {
@@ -182,7 +307,7 @@ test("unrecognized archives are rejected", () => {
   } catch (error) {
     message = String(error);
   }
-  assert(message.includes("No installable GTK or KDE"), "missing explicit rejection");
+  assert(message.includes("No supported theme structure"), "missing explicit rejection");
 });
 
 test("generated Nota package is a readable ZIP", () => {
@@ -206,7 +331,7 @@ test("generic ZIP writer retains UTF-8 names", () => {
 });
 
 test("converter pages inject generated CSS through a style element", () => {
-  for (const page of ["gtk.html", "kde.html"]) {
+  for (const page of ["gtk.html", "kde.html", "typora.html"]) {
     const html = readFileSync(new URL(`../${page}`, import.meta.url), "utf8");
     assert(
       html.includes('<style id="converted-preview-style"></style>'),
@@ -224,6 +349,8 @@ test("converter entry exposes a round-trip language switch", () => {
   assert(html.includes('id="language-toggle"'), "language toggle id is missing");
   assert(html.includes('languageLink.href = "?lang=en"'), "Chinese mode cannot switch back to English");
   assert(html.includes('languageLink.href = "?lang=zh"'), "English mode cannot switch to Chinese");
+  assert(html.includes('href="typora.html"'), "Typora converter choice is missing");
+  assert(html.includes('a[href="typora.html"]'), "Typora page does not preserve the language parameter");
 });
 
 console.log(`\n通过 ${passed} 条，失败 ${failures.length} 条`);

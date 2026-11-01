@@ -1,8 +1,8 @@
 # Nota Theme Converter
 
 A local, browser-based theme converter for [Nota](https://github.com/Nota-MD/Nota).
-It turns GNOME/GTK and KDE Plasma theme packages into self-contained Nota UI
-themes without uploading the source archive.
+It turns Typora, GNOME/GTK and KDE Plasma themes into self-contained Nota UI
+themes without uploading the source files.
 
 The converter is deployed independently from the main website:
 
@@ -10,10 +10,12 @@ The converter is deployed independently from the main website:
 
 ## Separate pipelines
 
-GTK/GNOME and KDE Plasma have independent recognition and conversion paths:
+Typora, GTK/GNOME and KDE Plasma have independent recognition and conversion
+paths:
 
 | Source | What is read | Output |
 |---|---|---|
+| Typora | `--bg-color`, `--text-color`, sidebar/hover/active tokens, local `@import`, `@font-face` | Light/dark pairs, Nota tokens, font stack, bundled fonts |
 | GTK 3/4 | `@define-color`, widget geometry, `gtk-font-name`, `@font-face` | Light/dark Nota tokens, font stack, bundled fonts |
 | KDE Plasma | `Colors:Window`, `Colors:View`, `Colors:Button`, `Colors:Selection`, `kdeglobals`, `@font-face` | Nota tokens, KDE font stack, bundled fonts |
 
@@ -25,7 +27,8 @@ provides the same choice to programmatic callers.
 
 The converter discovers WOFF2, WOFF, TTF and OTF files inside the source package,
 reads `@font-face` declarations and native OpenType family names where possible,
-and copies the files into the exported theme:
+and copies matching files into the exported theme. For Typora, document serif
+faces stay in the document theme pipeline and are not used as Nota's UI font.
 
 ```text
 themes/ui/<id>/
@@ -39,7 +42,7 @@ themes/ui/<id>/
 Generated CSS uses relative `url("./fonts/...")` paths. The live browser preview
 uses temporary Blob URLs, so fonts can be evaluated before download.
 
-Current limits are 16 font files, 8 MiB per file and 24 MiB in total, matching
+Current limits are 16 font files, 32 MiB per file and 48 MiB in total, matching
 Nota's theme-resource constraints.
 
 ## Development
@@ -58,6 +61,7 @@ decompression, a bundled XZ decoder and native DOM APIs.
 
 ## Package support
 
+- Standalone Typora `.css` files
 - ZIP
 - TAR
 - TAR.GZ / TGZ

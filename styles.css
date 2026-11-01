@@ -859,6 +859,112 @@ footer a {
   color: #ffffff;
 }
 
+.converter-typora {
+  --bg: #f7f2e8;
+  --surface: #fffdf8;
+  --surface-alt: #eee5d6;
+  --fg: #2f2922;
+  --muted: #6e6254;
+  --faint: #8f816f;
+  --line: #ddd0bd;
+  --accent: #9b4f36;
+  --accent-hover: #7d3d29;
+  --accent-soft: #f0dfd2;
+  --blue: #9b4f36;
+  --blue-soft: rgb(184 111 76 / 18%);
+  --radius: 7px;
+  --pill: 5px;
+  --shadow: 0 18px 48px rgb(76 52 31 / 10%);
+  background:
+    linear-gradient(90deg, rgb(109 84 54 / 2%) 1px, transparent 1px),
+    var(--bg);
+  background-size: 34px 34px;
+  color-scheme: light;
+  --wordmark-filter: none;
+}
+
+.converter-typora .site-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  background: rgb(247 242 232 / 92%);
+  backdrop-filter: blur(18px);
+}
+
+.converter-typora .availability {
+  background: #493f35;
+  color: #fbf7ef;
+}
+
+.converter-typora .bar {
+  min-height: 76px;
+}
+
+.converter-typora nav a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.converter-typora .button {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.converter-typora .button.primary,
+.converter-typora .button.small {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.converter-typora .button.primary:hover,
+.converter-typora .button.small:hover {
+  background: var(--accent-hover);
+}
+
+.converter-typora .converter-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.converter-typora .converter-hero::before {
+  position: absolute;
+  z-index: -1;
+  top: -170px;
+  left: 50%;
+  width: min(900px, 92vw);
+  height: 500px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 42%, rgb(177 103 73 / 18%), transparent 48%),
+    radial-gradient(circle at 68% 48%, rgb(216 188 132 / 20%), transparent 38%);
+  content: "";
+  filter: blur(28px);
+  transform: translateX(-50%);
+}
+
+.converter-typora .converter-card,
+.converter-typora .supported-card,
+.converter-typora .nota-preview {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.converter-typora .drop-zone {
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgb(155 79 54 / 6%), transparent 58%),
+    #fffdfa;
+}
+
+.converter-typora .drop-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 6px;
+  background: #433b33;
+  color: #fffaf2;
+}
+
 .kde-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
@@ -1033,7 +1139,7 @@ footer a {
 
 .converter-choices {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   padding-top: 36px;
 }
@@ -1068,6 +1174,36 @@ footer a {
   background:
     linear-gradient(135deg, rgb(29 153 243 / 16%), transparent 58%),
     #eef8fe;
+}
+
+.typora-choice {
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 80% 12%, rgb(255 255 255 / 66%), transparent 38%),
+    linear-gradient(145deg, #f6efe3, #eadfcd);
+}
+
+.typora-choice .choice-label {
+  border-radius: 4px;
+  background: #3e3730;
+  color: #fffaf2;
+}
+
+.typora-choice .choice-window {
+  border-radius: 7px;
+  background:
+    linear-gradient(#4a4239 0 24px, #fffdf8 25px);
+}
+
+.typora-choice .choice-window::before,
+.typora-choice .choice-window::after {
+  background: rgb(255 250 242 / 72%);
+}
+
+.typora-choice .choice-accent {
+  border-radius: 8px 3px 8px 3px;
+  background: linear-gradient(145deg, #b96b4c, #8b432f);
+  box-shadow: 0 18px 30px rgb(116 61 40 / 22%);
 }
 
 .choice-label {
@@ -1737,7 +1873,26 @@ footer a {
   }
 
   .converter-choice {
-    min-height: 470px;
+    min-height: 0;
+    padding: 22px;
+  }
+
+  .choice-visual {
+    min-height: 238px;
+    margin: 18px 0 24px;
+  }
+
+  .choice-window-a {
+    height: 194px;
+  }
+
+  .choice-window-b {
+    height: 146px;
+  }
+
+  .choice-accent {
+    width: 74px;
+    height: 74px;
   }
 
   .kde-hero {

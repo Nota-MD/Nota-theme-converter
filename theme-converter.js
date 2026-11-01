@@ -17,6 +17,7 @@ const translations = {
   converter: ["Theme converter", "主题转换器"],
   converterGtk: ["GTK / GNOME", "GTK / GNOME"],
   converterKde: ["KDE Plasma", "KDE Plasma"],
+  converterTypora: ["Typora", "Typora"],
   language: ["中文", "English"],
   privacyNote: [
     "Local only. The file stays in this browser tab. No account, server, analytics or upload is involved.",
@@ -99,6 +100,37 @@ const pageCopy = {
     kdeFontCard: [
       "Reads KDE font settings and @font-face declarations. Bundled WOFF2, WOFF, TTF and OTF fonts are exported with the theme.",
       "读取 KDE 字体设置与 @font-face 声明；WOFF2、WOFF、TTF 和 OTF 字体会随主题导出。",
+    ],
+  },
+  typora: {
+    eyebrow: ["Typora theme converter", "Typora 主题转换器"],
+    title: ["Keep the page. Bring the shell.", "保留页面，带走界面。"],
+    lead: [
+      "Load a Typora CSS theme, a standalone stylesheet or a ZIP of its adjacent assets. Nota maps the theme’s window, sidebar, selection and typography language into a ready-to-import UI theme.",
+      "载入 Typora CSS 主题、独立样式表，或连同相邻资源的 ZIP。Nota 会把窗口、侧栏、选择项与字体语言映射成可直接导入的界面主题。",
+    ],
+    dropTitle: ["Drop a Typora theme", "拖入 Typora 主题"],
+    dropBody: [
+      "or click to choose a CSS, ZIP, TAR.GZ or TAR.XZ. Theme folders should be archived; local imports and bundled fonts are preserved.",
+      "或点击选择 CSS、ZIP、TAR.GZ、TAR.XZ。主题文件夹请先压缩；本地 @import 与随包字体会保留。",
+    ],
+    idle: ["Waiting for a Typora theme.", "等待 Typora 主题。"],
+    typoraCard: [
+      "Recognizes Typora’s --bg-color, --text-color, sidebar, hover, active-file and border tokens instead of copying document markup.",
+      "识别 Typora 的 --bg-color、--text-color、侧栏、悬停、活动文件与边框变量，不复制正文 DOM 选择器。",
+    ],
+    typoraPairCard: [
+      "Pairs a base stylesheet with its -dark companion when both live in the same theme folder.",
+      "当同一主题文件夹中同时存在基础样式与 -dark 伴生样式时，会自动配对浅色和深色。",
+    ],
+    fontCard: [
+      "Expands local @import rules, maps UI and monospace families, keeps document serif faces out of the shell, and exports only matching bundled fonts.",
+      "展开本地 @import，映射界面与等宽字体，避免正文衬线字体污染外壳，并只导出实际匹配的随包字体。",
+    ],
+    scopeTitle: ["What is mapped", "转换内容"],
+    scopeBody: [
+      "Semantic UI colors, typography and practical geometry. Typora’s editor DOM and proprietary shell selectors are not copied.",
+      "映射界面语义色、字体与实用几何参数；不会照搬 Typora 编辑器 DOM 和专有外壳选择器。",
     ],
   },
 };
@@ -218,7 +250,12 @@ async function convertFile(file) {
     current = { ...converted, entries, file };
     currentMode = converted.theme.mode;
     resultName.textContent = converted.theme.name;
-    const source = converted.theme.kind === "gtk" ? "GTK / GNOME" : "KDE Plasma";
+    const source =
+      converted.theme.kind === "gtk"
+        ? "GTK / GNOME"
+        : converted.theme.kind === "kde"
+          ? "KDE Plasma"
+          : "Typora";
     const fontCount = converted.theme.fonts.length;
     const fontLabel = zh ? `${fontCount} 个内置字体` : `${fontCount} bundled font${fontCount === 1 ? "" : "s"}`;
     resultKind.textContent = `${source} → Nota · ${fontLabel} · ${converted.theme.id}`;

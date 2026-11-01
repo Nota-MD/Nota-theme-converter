@@ -1,7 +1,7 @@
 {
   "name": "@nota-md/theme-converter",
   "version": "1.0.0",
-  "description": "Local GTK/GNOME and KDE Plasma theme converter for Nota",
+  "description": "Local Typora, GTK/GNOME and KDE Plasma theme converter for Nota",
   "type": "module",
   "license": "BSD-2-Clause",
   "repository": {
