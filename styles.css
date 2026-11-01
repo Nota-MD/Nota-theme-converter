@@ -1502,6 +1502,51 @@ footer a {
   box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
 }
 
+.output-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.output-switch:has(button[hidden]) {
+  grid-template-columns: 1fr;
+}
+
+.output-switch button {
+  display: grid;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.output-switch button[hidden] {
+  display: none;
+}
+
+.output-switch button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 64%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--fg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.output-switch strong {
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.output-switch small {
+  color: var(--muted);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
 .token-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1618,7 +1663,7 @@ footer a {
 
 .preview-editor {
   padding: 26px 30px;
-  background: var(--p-bg, #ffffff);
+  background: var(--p-bg, var(--surface));
 }
 
 .preview-toolbar {
@@ -1667,9 +1712,44 @@ footer a {
   font-size: 0.68rem;
 }
 
+.nota-preview[data-preview="document"] .preview-chrome,
+.nota-preview[data-preview="document"] .preview-sidebar,
+.nota-preview[data-preview="document"] .preview-toolbar {
+  display: none;
+}
+
+.nota-preview[data-preview="document"] .preview-body {
+  display: block;
+  min-height: 520px;
+}
+
+.nota-preview[data-preview="document"] .preview-editor {
+  min-height: 520px;
+  padding: 58px 52px;
+  color: var(--p-fg, var(--fg));
+  font-family: var(--p-font-doc, var(--sans));
+}
+
+.nota-preview[data-preview="document"] .preview-editor h3 {
+  font-family: var(--p-font-doc, var(--sans));
+  font-size: 2rem;
+  line-height: 1.28;
+}
+
+.nota-preview[data-preview="document"] .preview-editor p,
+.nota-preview[data-preview="document"] .preview-editor blockquote {
+  font-size: 1rem;
+  line-height: 1.78;
+}
+
+.nota-preview[data-preview="document"] .preview-editor code {
+  font-family: var(--p-font-mono, var(--mono));
+  font-size: 0.82rem;
+}
+
 .supported-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 16px;
   margin-top: 54px;
 }

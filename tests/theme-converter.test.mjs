@@ -87,6 +87,61 @@ test("KDE color scheme maps Window, View and Selection", () => {
   assert(theme.light.palette.accent === "#bd5b00", "selection mismatch");
 });
 
+test("GTK and KDE produce matching document themes", () => {
+  const gtkEntries = [
+    {
+      path: "Sample/gtk-3.0/gtk.css",
+      data: bytes(`
+        @define-color theme_bg_color #f6f5f4;
+        @define-color theme_fg_color #241f31;
+        @define-color theme_base_color #ffffff;
+        @define-color theme_selected_bg_color #3584e4;
+      `),
+    },
+    { path: "Sample/index.theme", data: bytes("[Desktop Entry]\nName=Doc GTK\n") },
+  ];
+  const gtk = recognizeAndConvert(gtkEntries, { preferredKind: "gtk" });
+  assert(gtk.theme.document, "GTK document output is missing");
+  assert(gtk.theme.document.css.includes("--doc-bg: #f6f5f4"), "GTK document paper mismatch");
+  assert(gtk.theme.document.css.includes("--font-doc:"), "GTK document font is missing");
+
+  const kdeEntries = [
+    {
+      path: "Look/contents/colors",
+      data: bytes(`
+        [Colors:Window]
+        BackgroundNormal=44,55,70
+        ForegroundNormal=233,229,223
+        [Colors:View]
+        BackgroundNormal=31,40,51
+        [Colors:Selection]
+        BackgroundNormal=189,91,0
+      `),
+    },
+  ];
+  const kde = recognizeAndConvert(kdeEntries, { preferredKind: "kde" });
+  assert(kde.theme.document, "KDE document output is missing");
+  assert(kde.theme.document.css.includes("--doc-bg: #2c3746"), "KDE document paper mismatch");
+});
+
+test("document output packages install under themes/document", () => {
+  const entries = [
+    {
+      path: "Sample/gtk-4.0/gtk.css",
+      data: bytes("@define-color theme_bg_color #ffffff; @define-color theme_fg_color #111111;"),
+    },
+    { path: "Sample/gtk-4.0/gtk-dark.css", data: bytes("@define-color theme_bg_color #111111; @define-color theme_fg_color #eeeeee;") },
+    { path: "Sample/index.theme", data: bytes("[Desktop Entry]\nName=Document ZIP\n") },
+  ];
+  const converted = recognizeAndConvert(entries, { preferredKind: "gtk" });
+  const zipText = new TextDecoder().decode(
+    buildPackageZip({ entries, ...converted, output: "document" }),
+  );
+  assert(zipText.includes("themes/document/gtk-document-zip/theme.css"), "document theme.css path is missing");
+  assert(zipText.includes("themes/document/dark/gtk-document-zip.css"), "dark companion is missing");
+  assert(!zipText.includes("themes/ui/gtk-document-zip/"), "document package unexpectedly contains a UI theme");
+});
+
 test("GTK pipeline preserves declared fonts in CSS and ZIP", () => {
   const font = bytes("GTK-CUSTOM-FONT");
   const entries = [
@@ -240,6 +295,7 @@ test("Typora document serif fonts do not leak into the Nota UI font", () => {
   const converted = recognizeAndConvert(entries, { preferredKind: "typora" });
   assert(!converted.theme.uiFont.includes("Paper Serif"), "serif document font leaked into --font-ui");
   assert(converted.theme.fonts.length === 0, "unused document font was exported into the UI package");
+  assert(converted.theme.document === null, "Typora converter unexpectedly produced a document theme");
 });
 
 test("Typora light and dark companions stay paired", () => {
@@ -341,6 +397,10 @@ test("converter pages inject generated CSS through a style element", () => {
       !html.includes('<script id="converted-preview-style"></script>'),
       `${page} still uses a script element for converted CSS`,
     );
+    assert(html.includes('data-output="ui"'), `${page} has no UI output selector`);
+    assert(html.includes('data-output="document"'), `${page} has no document output selector`);
+    assert(html.includes("styles.css?v="), `${page} does not bust the cached stylesheet`);
+    assert(html.includes("theme-converter.js?v="), `${page} does not bust the cached converter`);
   }
 });
 

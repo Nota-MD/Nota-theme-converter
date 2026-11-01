@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#f7f2e8">
   <title>Typora Theme Converter — Nota</title>
   <link rel="icon" href="assets/nota-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261101-3">
   <script src="assets/vendor/xz-decompress.min.js" defer></script>
-  <script type="module" src="theme-converter.js"></script>
+  <script type="module" src="theme-converter.js?v=20261101-3"></script>
 </head>
 <body class="converter-typora" data-converter-kind="typora">
   <header class="site-header">
@@ -74,6 +74,17 @@
                 <button type="button" data-mode="light" aria-pressed="true" data-i18n="light">Light</button>
                 <button type="button" data-mode="dark" aria-pressed="false" data-i18n="dark">Dark</button>
               </div>
+            </div>
+
+            <div class="output-switch" aria-label="Theme output">
+              <button type="button" data-output="ui" aria-pressed="true">
+                <strong data-i18n="uiOutput">UI theme</strong>
+                <small data-i18n="uiOutputHint">Window, sidebar and controls</small>
+              </button>
+              <button type="button" data-output="document" aria-pressed="false" hidden>
+                <strong data-i18n="documentOutput">Document theme</strong>
+                <small data-i18n="documentOutputHint">Paper, type and Markdown blocks</small>
+              </button>
             </div>
 
             <div class="token-grid" id="token-grid"></div>

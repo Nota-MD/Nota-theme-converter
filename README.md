@@ -16,8 +16,8 @@ paths:
 | Source | What is read | Output |
 |---|---|---|
 | Typora | `--bg-color`, `--text-color`, sidebar/hover/active tokens, local `@import`, `@font-face` | Light/dark pairs, Nota tokens, font stack, bundled fonts |
-| GTK 3/4 | `@define-color`, widget geometry, `gtk-font-name`, `@font-face` | Light/dark Nota tokens, font stack, bundled fonts |
-| KDE Plasma | `Colors:Window`, `Colors:View`, `Colors:Button`, `Colors:Selection`, `kdeglobals`, `@font-face` | Nota tokens, KDE font stack, bundled fonts |
+| GTK 3/4 | `@define-color`, widget geometry, `gtk-font-name`, `@font-face` | UI theme + matching document theme, light/dark tokens, font stack, bundled fonts |
+| KDE Plasma | `Colors:Window`, `Colors:View`, `Colors:Button`, `Colors:Selection`, `kdeglobals`, `@font-face` | UI theme + matching document theme, light/dark tokens, KDE font stack, bundled fonts |
 
 An archive containing both source types is never guessed silently. The selected
 page fixes the pipeline, while `recognizeAndConvert(entries, { preferredKind })`

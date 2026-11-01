@@ -2,7 +2,7 @@ import {
   buildPackageZip,
   extractThemePackage,
   recognizeAndConvert,
-} from "./theme-converter-core.js";
+} from "./theme-converter-core.js?v=20261101-3";
 
 const requestedLanguage = new URLSearchParams(location.search).get("lang");
 const zh = requestedLanguage
@@ -26,7 +26,15 @@ const translations = {
   light: ["Light", "浅色"],
   dark: ["Dark", "深色"],
   download: ["Download Nota theme", "下载 Nota 主题"],
+  downloadUi: ["Download UI theme", "下载 UI 主题"],
+  downloadDocument: ["Download document theme", "下载文档主题"],
   copyCss: ["Copy CSS", "复制 CSS"],
+  copyUiCss: ["Copy UI CSS", "复制 UI CSS"],
+  copyDocumentCss: ["Copy document CSS", "复制文档 CSS"],
+  uiOutput: ["UI theme", "UI 主题"],
+  uiOutputHint: ["Window, sidebar and controls", "窗口、侧栏与控件"],
+  documentOutput: ["Document theme", "文档主题"],
+  documentOutputHint: ["Paper, type and Markdown blocks", "纸面、字体与 Markdown 块"],
   previewLabel: ["Live Nota preview", "Nota 实时预览"],
   previewTitle: ["A quieter place to write", "更安静的写作空间"],
   previewBody: [
@@ -41,8 +49,8 @@ const translations = {
   loading: ["Reading the theme package…", "正在读取主题包…"],
   success: ["Theme recognized and converted locally.", "已识别主题并在本地完成转换。"],
   unsupported: [
-    "This archive was not recognized as an installable GTK or KDE theme package.",
-    "这个压缩包不是可识别的 GTK 或 KDE 可安装主题包。",
+    "This archive was not recognized as a supported Typora, GTK or KDE theme.",
+    "这个压缩包不是可识别的 Typora、GTK 或 KDE 主题。",
   ],
   copied: ["CSS copied.", "CSS 已复制。"],
   copyFailed: ["Could not copy the CSS.", "无法复制 CSS。"],
@@ -53,8 +61,8 @@ const pageCopy = {
     eyebrow: ["GTK / GNOME converter", "GTK / GNOME 转换器"],
     title: ["Bring GNOME with you.", "把 GNOME 带到 Nota。"],
     lead: [
-      "Load an installable GNOME or GTK theme package. Nota reads its palette, corner radius, control density and bundled fonts locally, then builds a ready-to-import UI theme.",
-      "载入可安装的 GNOME 或 GTK 主题包。Nota 在本地读取配色、圆角、控件密度和主题自带字体，然后生成可直接导入的界面主题。",
+      "Load an installable GNOME or GTK theme package. Nota reads its palette, geometry and bundled fonts locally, then builds both a UI theme and a matching document theme.",
+      "载入可安装的 GNOME 或 GTK 主题包。Nota 在本地读取配色、几何参数和主题自带字体，同时生成 UI 主题与配套文档主题。",
     ],
     dropTitle: ["Drop a GTK theme package", "拖入 GTK 主题包"],
     dropBody: [
@@ -70,18 +78,18 @@ const pageCopy = {
       "Reads gtk-font-name and @font-face declarations. WOFF2, WOFF, TTF and OTF files travel with the exported theme.",
       "读取 gtk-font-name 与 @font-face 声明；WOFF2、WOFF、TTF 和 OTF 字体会随主题导出。",
     ],
-    scopeTitle: ["What is mapped", "转换内容"],
+    scopeTitle: ["Two outputs", "两个输出"],
     scopeBody: [
-      "Semantic colors, GTK geometry and embedded fonts. GTK widget selectors are not copied into Nota.",
-      "映射语义配色、GTK 几何参数与嵌入字体；不会把 GTK 控件选择器照搬进 Nota。",
+      "Produces both a UI theme and a matching document theme. GTK widget selectors are not copied into Nota.",
+      "同时生成 UI 主题与配套文档主题；不会把 GTK 控件选择器照搬进 Nota。",
     ],
   },
   kde: {
     eyebrow: ["KDE Plasma converter", "KDE Plasma 转换器"],
     title: ["Your Plasma palette, now in Nota.", "把 Plasma 配色带到 Nota。"],
     lead: [
-      "Load a Plasma color scheme or global theme. Nota reads its window, view, button and selection roles, plus bundled fonts, and converts them locally into a ready-to-import UI theme.",
-      "载入 Plasma 色彩方案或全局主题。Nota 在本地读取窗口、视图、按钮、选择项配色及主题自带字体，然后生成可直接导入的界面主题。",
+      "Load a Plasma color scheme or global theme. Nota reads its window, view, button and selection roles, plus bundled fonts, then produces both a UI theme and a matching document theme.",
+      "载入 Plasma 色彩方案或全局主题。Nota 在本地读取窗口、视图、按钮、选择项配色及主题自带字体，同时生成 UI 主题与配套文档主题。",
     ],
     dropTitle: ["Drop a Plasma theme package", "拖入 Plasma 主题包"],
     dropBody: [
@@ -101,13 +109,18 @@ const pageCopy = {
       "Reads KDE font settings and @font-face declarations. Bundled WOFF2, WOFF, TTF and OTF fonts are exported with the theme.",
       "读取 KDE 字体设置与 @font-face 声明；WOFF2、WOFF、TTF 和 OTF 字体会随主题导出。",
     ],
+    scopeTitle: ["Two outputs", "两个输出"],
+    scopeBody: [
+      "Plasma roles produce a UI theme and a matching document theme, with light/dark document companions when available.",
+      "Plasma 配色角色会生成 UI 主题与配套文档主题；存在深浅配色时会一并生成文档深色伴侣。",
+    ],
   },
   typora: {
     eyebrow: ["Typora theme converter", "Typora 主题转换器"],
     title: ["Keep the page. Bring the shell.", "保留页面，带走界面。"],
     lead: [
-      "Load a Typora CSS theme, a standalone stylesheet or a ZIP of its adjacent assets. Nota maps the theme’s window, sidebar, selection and typography language into a ready-to-import UI theme.",
-      "载入 Typora CSS 主题、独立样式表，或连同相邻资源的 ZIP。Nota 会把窗口、侧栏、选择项与字体语言映射成可直接导入的界面主题。",
+      "Load a Typora CSS theme, a standalone stylesheet or a ZIP of its adjacent assets. This converter produces the UI theme only; the document stylesheet can already be imported into Nota directly.",
+      "载入 Typora CSS 主题、独立样式表，或连同相邻资源的 ZIP。这里只转换 UI 主题；Typora 的文档主题仍可直接导入 Nota。",
     ],
     dropTitle: ["Drop a Typora theme", "拖入 Typora 主题"],
     dropBody: [
@@ -167,9 +180,11 @@ const previewStyle = document.querySelector("#converted-preview-style");
 const downloadButton = document.querySelector("#download-theme");
 const copyButton = document.querySelector("#copy-css");
 const modeButtons = [...document.querySelectorAll("[data-mode]")];
+const outputButtons = [...document.querySelectorAll("[data-output]")];
 
 let current = null;
 let currentMode = "light";
+let currentOutput = "ui";
 let previewFontUrls = [];
 
 function releasePreviewFonts() {
@@ -196,8 +211,10 @@ function setPreviewMode(mode) {
   if (!current) return;
   currentMode = mode;
   preview.dataset.uiMode = mode;
-  const palette = current.theme[mode].palette;
-  const geometry = current.theme[mode].geometry;
+  preview.dataset.preview = currentOutput;
+  const output = currentOutput === "document" ? current.theme.document : current.theme;
+  const palette = output[mode].palette;
+  const geometry = output[mode].geometry;
   for (const [name, value] of Object.entries({
     "--p-bg": palette.bg,
     "--p-fg": palette.fg,
@@ -209,6 +226,8 @@ function setPreviewMode(mode) {
     "--p-accent": palette.accent,
     "--p-accent-fg": palette.accentFg,
     "--p-font-ui": current.theme.uiFont,
+    "--p-font-doc": current.theme.document?.uiFont || current.theme.uiFont,
+    "--p-font-mono": current.theme.document?.monoFont || current.theme.monoFont || "ui-monospace, monospace",
     "--p-radius": `${geometry.radius}px`,
     "--p-radius-sm": `${geometry.radiusSmall}px`,
   })) {
@@ -217,6 +236,13 @@ function setPreviewMode(mode) {
   for (const button of modeButtons) {
     button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
   }
+  for (const button of outputButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.output === currentOutput));
+  }
+  downloadButton.textContent =
+    currentOutput === "document" ? tr("downloadDocument") : tr("downloadUi");
+  copyButton.textContent =
+    currentOutput === "document" ? tr("copyDocumentCss") : tr("copyUiCss");
   renderTokens(palette);
 }
 
@@ -249,6 +275,7 @@ async function convertFile(file) {
     const converted = recognizeAndConvert(entries, { preferredKind: pipeline });
     current = { ...converted, entries, file };
     currentMode = converted.theme.mode;
+    currentOutput = "ui";
     resultName.textContent = converted.theme.name;
     const source =
       converted.theme.kind === "gtk"
@@ -262,6 +289,11 @@ async function convertFile(file) {
     releasePreviewFonts();
     previewStyle.textContent = previewCss(converted.theme);
     preview.dataset.uiStyle = converted.theme.id;
+    for (const button of outputButtons) {
+      if (button.dataset.output === "document") {
+        button.hidden = !converted.theme.document;
+      }
+    }
     setPreviewMode(currentMode);
     result.classList.add("visible");
     setStatus(tr("success"), "success");
@@ -301,14 +333,22 @@ for (const button of modeButtons) {
   button.addEventListener("click", () => setPreviewMode(button.dataset.mode));
 }
 
+for (const button of outputButtons) {
+  button.addEventListener("click", () => {
+    if (button.hidden) return;
+    currentOutput = button.dataset.output;
+    setPreviewMode(currentMode);
+  });
+}
+
 downloadButton.addEventListener("click", () => {
   if (!current) return;
-  const bytes = buildPackageZip(current);
+  const bytes = buildPackageZip({ ...current, output: currentOutput });
   const blob = new Blob([bytes], { type: "application/zip" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${current.theme.id}-nota-ui.zip`;
+  anchor.download = `${current.theme.id}-nota-${currentOutput}.zip`;
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
@@ -316,7 +356,9 @@ downloadButton.addEventListener("click", () => {
 copyButton.addEventListener("click", async () => {
   if (!current) return;
   try {
-    await navigator.clipboard.writeText(current.theme.css);
+    await navigator.clipboard.writeText(
+      currentOutput === "document" ? current.theme.document.css : current.theme.css,
+    );
     setStatus(tr("copied"), "success");
   } catch {
     setStatus(tr("copyFailed"), "error");

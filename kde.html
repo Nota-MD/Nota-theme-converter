@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#f7f8fa">
   <title>KDE Plasma Theme Converter — Nota</title>
   <link rel="icon" href="assets/nota-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261101-3">
   <script src="assets/vendor/xz-decompress.min.js" defer></script>
-  <script type="module" src="theme-converter.js"></script>
+  <script type="module" src="theme-converter.js?v=20261101-3"></script>
 </head>
 <body class="converter-kde" data-converter-kind="kde">
   <header class="site-header">
@@ -95,6 +95,16 @@
                 <button type="button" data-mode="dark" aria-pressed="false" data-i18n="dark">Dark</button>
               </div>
             </div>
+            <div class="output-switch" aria-label="Theme output">
+              <button type="button" data-output="ui" aria-pressed="true">
+                <strong data-i18n="uiOutput">UI theme</strong>
+                <small data-i18n="uiOutputHint">Window, sidebar and controls</small>
+              </button>
+              <button type="button" data-output="document" aria-pressed="false">
+                <strong data-i18n="documentOutput">Document theme</strong>
+                <small data-i18n="documentOutputHint">Paper, type and Markdown blocks</small>
+              </button>
+            </div>
             <div class="token-grid" id="token-grid"></div>
             <div class="result-actions">
               <button class="button primary" id="download-theme" type="button" data-i18n="download">Download Nota theme</button>
@@ -145,6 +155,11 @@
         <h3>Typography</h3>
         <p data-i18n="kdeFontCard">Reads KDE font settings and @font-face declarations. Bundled WOFF2, WOFF, TTF and OTF fonts are exported with the theme.</p>
         <code>kdeglobals + contents/fonts/</code>
+      </article>
+      <article class="supported-card">
+        <h3 data-i18n="scopeTitle">Two outputs</h3>
+        <p data-i18n="scopeBody">Plasma roles produce a UI theme and a matching document theme, with light/dark document companions when available.</p>
+        <code>themes/ui/… + themes/document/…</code>
       </article>
     </section>
 
