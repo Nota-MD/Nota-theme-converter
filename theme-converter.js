@@ -2,7 +2,7 @@ import {
   buildPackageZip,
   extractThemePackage,
   recognizeAndConvert,
-} from "./theme-converter-core.js?v=20261101-3";
+} from "./theme-converter-core.js?v=20261101-4";
 
 const requestedLanguage = new URLSearchParams(location.search).get("lang");
 const zh = requestedLanguage
@@ -26,8 +26,8 @@ const translations = {
   light: ["Light", "浅色"],
   dark: ["Dark", "深色"],
   download: ["Download Nota theme", "下载 Nota 主题"],
-  downloadUi: ["Download UI theme", "下载 UI 主题"],
-  downloadDocument: ["Download document theme", "下载文档主题"],
+  downloadUi: ["Save as UI theme", "保存为 UI 主题"],
+  downloadDocument: ["Save as document theme", "保存为文档主题"],
   copyCss: ["Copy CSS", "复制 CSS"],
   copyUiCss: ["Copy UI CSS", "复制 UI CSS"],
   copyDocumentCss: ["Copy document CSS", "复制文档 CSS"],
@@ -178,6 +178,7 @@ const tokenGrid = document.querySelector("#token-grid");
 const preview = document.querySelector("#nota-preview");
 const previewStyle = document.querySelector("#converted-preview-style");
 const downloadButton = document.querySelector("#download-theme");
+const documentDownloadButton = document.querySelector("#download-document");
 const copyButton = document.querySelector("#copy-css");
 const modeButtons = [...document.querySelectorAll("[data-mode]")];
 const outputButtons = [...document.querySelectorAll("[data-output]")];
@@ -239,8 +240,6 @@ function setPreviewMode(mode) {
   for (const button of outputButtons) {
     button.setAttribute("aria-pressed", String(button.dataset.output === currentOutput));
   }
-  downloadButton.textContent =
-    currentOutput === "document" ? tr("downloadDocument") : tr("downloadUi");
   copyButton.textContent =
     currentOutput === "document" ? tr("copyDocumentCss") : tr("copyUiCss");
   renderTokens(palette);
@@ -294,6 +293,7 @@ async function convertFile(file) {
         button.hidden = !converted.theme.document;
       }
     }
+    documentDownloadButton.hidden = !converted.theme.document;
     setPreviewMode(currentMode);
     result.classList.add("visible");
     setStatus(tr("success"), "success");
@@ -343,12 +343,24 @@ for (const button of outputButtons) {
 
 downloadButton.addEventListener("click", () => {
   if (!current) return;
-  const bytes = buildPackageZip({ ...current, output: currentOutput });
+  const bytes = buildPackageZip({ ...current, output: "ui" });
   const blob = new Blob([bytes], { type: "application/zip" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${current.theme.id}-nota-${currentOutput}.zip`;
+  anchor.download = `${current.theme.id}-nota-ui.zip`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+documentDownloadButton.addEventListener("click", () => {
+  if (!current?.theme.document) return;
+  const bytes = buildPackageZip({ ...current, output: "document" });
+  const blob = new Blob([bytes], { type: "application/zip" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${current.theme.id}-nota-document.zip`;
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });

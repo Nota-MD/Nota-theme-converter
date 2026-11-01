@@ -399,6 +399,8 @@ test("converter pages inject generated CSS through a style element", () => {
     );
     assert(html.includes('data-output="ui"'), `${page} has no UI output selector`);
     assert(html.includes('data-output="document"'), `${page} has no document output selector`);
+    assert(html.includes('id="download-theme"'), `${page} has no UI save action`);
+    assert(html.includes('id="download-document"'), `${page} has no document save action`);
     assert(html.includes("styles.css?v="), `${page} does not bust the cached stylesheet`);
     assert(html.includes("theme-converter.js?v="), `${page} does not bust the cached converter`);
   }

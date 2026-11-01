@@ -1583,7 +1583,11 @@ footer a {
 }
 
 .result-actions .button {
-  flex: 1 1 170px;
+  flex: 1 1 150px;
+}
+
+.result-actions .button[hidden] {
+  display: none;
 }
 
 .preview-label {
